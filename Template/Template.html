@@ -1,0 +1,197 @@
+<html ng-app="sort">
+<head>
+    <style>
+        a{text-decoration: none}
+        .order {background: lightgrey}
+        .height-weight {background: rgb(250, 219, 216)}
+    </style>
+</head>
+    <body ng-controller="SortController as vm">
+        <table border="1" id="myTable">
+            <tr><th width='25'>#</th>
+            <th width='125' class="order"><a href="#" ng-click="vm.sortColumn('UpdateOn', 'desc')">Update on</a></th>
+            <th width='250'>Title</th><th>ASIN</th>
+            <th with='150' class="order"><a href="#" ng-click="vm.sortColumn('LowestMF', 'asc')">Lowest MF</a></th>
+            <th class="order"><a href="#" ng-click="vm.sortColumn('Good', 'asc')">>= Good</a></th>
+            <th class="order"><a href="#" ng-click="vm.sortColumn('Diff', 'desc')"><- Diff -></a></th>
+            <th>Avg Lowest Used</th>
+            <th>Lowest New</th>
+            <th>Lowest FBA</th>
+            <th class="order"><a href="#" ng-click="vm.sortColumn('Diff', 'desc')">Used Count</a></th>
+            <th>Used BB</th><th>Amazon</th>
+            <th>Profit</th>
+            <th>ROI</th>
+            <th>Average Rank</th>
+            <th class="order"><a href="#" ng-click="vm.sortColumn('UsedCount', 'asc')">Sales Count</a></th>
+            <th>Publish</th>
+            <th>Weight</th>
+            <th>Research</th></tr>
+            <tr ng-repeat="row in vm.dataSource" ng-bind-html-unsafe="row.Asin.Content">
+                <td ng-bind-html="row.Number.Content | to_trusted"></td>
+                <td ng-bind-html="row.UpdateOn.Content | to_trusted"></td>
+                <td ng-bind-html="row.Title.Content | to_trusted"></td>
+                <td ng-bind-html="row.Asin.Content | to_trusted"></td>
+                <td ng-bind-html="row.LowestMF.Content | to_trusted"></td>
+                <td ng-bind-html="row.Good.Content | to_trusted"></td>
+                <td ng-bind-html="row.Diff.Content | to_trusted"></td>
+                <td ng-bind-html="row.AvgLowestUsed.Content | to_trusted"></td>
+                <td ng-bind-html="row.LowestNew.Content | to_trusted"></td>
+                <td ng-bind-html="row.LowestFBA.Content | to_trusted"></td>
+                <td ng-bind-html="row.UsedCount.Content | to_trusted"></td>
+                <td ng-bind-html="row.UsedBB.Content | to_trusted"></td>
+                <td ng-bind-html="row.Amazon.Content | to_trusted"></td>
+                <td ng-bind-html="row.Profit.Content | to_trusted"></td>
+                <td ng-bind-html="row.ROI.Content | to_trusted"></td>
+                <td ng-bind-html="row.AverageRank.Content | to_trusted"></td>
+                <td ng-bind-html="row.SalesCount.Content | to_trusted"></td>
+                <td ng-bind-html="row.Publish.Content | to_trusted"></td>
+                <td ng-class="row.Weight.Content*1>=3.5 ? 'height-weight' : ''" ng-bind-html="row.Weight.Content | to_trusted"></td>
+                <td ng-bind-html="row.Research.Content | to_trusted"></td>
+            </tr>
+        </table>
+
+    <div id="keepa_popup" style="display:none; position:fixed; z-index:100;"><img id="keepa_screen" style="width:100%; height:100%;" /></div>
+
+   
+</body>
+<script type="text/javascript"  src="./node_modules/angular/angular.js"></script>
+<script type="text/javascript" src="./node_modules/lodash/lodash.js"></script>
+<script type="text/javascript">
+    var sortapp = angular.module("sort",[]);
+
+    sortapp
+    .constant('_', window._)  
+    .run(function ($rootScope) {
+        $rootScope._ = window._;
+    })
+    .filter('to_trusted', ['$sce', function($sce){
+        return function(text) {
+            return $sce.trustAsHtml(text);
+        };
+    }]);;
+    sortapp.controller("SortController", SortController);
+
+    function SortController(){
+        
+        var vm = this;
+        vm.sortColumn = function(field, direction){
+            var sortField = field+".ValueForSort";
+            vm.dataSource = _.orderBy(vm.dataSource, [sortField],[direction]);
+        }
+
+        angular.element(document).ready(function(){
+            vm.table_rows = document.getElementById('myTable').children[0].children;
+            vm.links = document.getElementsByTagName('a');
+            vm.setKeepaImages();
+            vm.openLinksInOneWindow();
+            vm.win = undefined;
+        });
+        //set urls to keepa img popup
+        vm.setKeepaImages = function () {
+
+            var table = document.getElementById('myTable').children[0];
+            var last_column = [];
+
+            for (var i = 0, len = vm.table_rows.length; i < len; i++) {
+                last_column.push(vm.table_rows[i].children[vm.table_rows[i].children.length - 1]);
+            }
+
+            var keepa_links = [].slice.call(vm.links).filter(function (item) {
+                return item.innerHTML == 'Keepa';
+            });
+            var popup = document.getElementById('keepa_popup');
+
+            //get img of keepa popup element
+            var keepa_img = document.getElementById('keepa_screen');
+
+            for (var i = 0, len = last_column.length; i < len; i++) {
+                last_column[i].addEventListener('mouseleave', hide_popup);
+            }
+
+            //create keepa links event handlers(mouseover and mouse out)
+            for (var i = 0, len = keepa_links.length; i < len; i++) {
+                keepa_links[i].addEventListener('mouseover', show_popup);
+            }
+
+            function show_popup(event) {
+                //set source of image
+                keepa_img.src = event.target.screen;
+                popup.style.display = 'block';
+                popup.style.width = vm.table_rows[0].offsetWidth * 0.5 + 'px';
+                popup.style.left = vm.table_rows[0].offsetWidth * 0.25 + 'px';
+                popup.style.height = vm.table_rows[0].offsetWidth * 0.5 / 2 + 'px'
+                popup.style.top = 15 + '%';
+            }
+
+            //function that hide popup when user move out keepa link mouse
+            function hide_popup() {
+                keepa_img.src = '';
+                popup.style.display = 'none';
+            }
+
+            //set size of popup when user resize browser widow
+            window.addEventListener('resize', function (event) {
+                popup.style.width = vm.table_rows[0].offsetWidth * 0.5 + 'px';
+                popup.style.left = vm.table_rows[0].offsetWidth * 0.25 + 'px';
+
+            });
+
+            vm.setAsinToLinks(table, keepa_links);
+
+            vm.table_rows[vm.table_rows.length - 1].children[0].innerHTML = vm.table_rows[vm.table_rows.length - 2].children[0].innerHTML * 1 + 1;
+        }
+
+        //set asin parameter to links in keepa image source
+        vm.setAsinToLinks = function(table, links_array) {
+            //get column titles
+            var column_titles = table.children[0].children;
+
+            //find index of ASIN column
+            var asin_col_index = -1;
+            for (var i = 0, len = column_titles.length; i < len; i++) {
+                if (column_titles[i].innerHTML == 'ASIN') {
+                    asin_col_index = i;
+                    break;
+                }
+            }
+
+            //get array of cells with ASIN values
+            var asin_cells = [];
+            for (var i = 1, len = table.children.length; i < len; i++) {
+                asin_cells.push(table.children[i].children[asin_col_index]);
+            }
+
+            for (var i = 0, len = links_array.length; i < len; i++) {
+                links_array[i].screen = 'https://dyn.keepa.com/pricehistory.png?asin=' + asin_cells[i].innerText + '&domain=com&width=1000&height=500&amazon=0&new=0&used=1&range=365';
+            }
+        }
+
+        vm.openLinksInOneWindow = function() {
+            for (var i = 0, len = vm.links.length; i < len; i++) {
+                vm.links[i].addEventListener('click', function (event) {
+                    event.preventDefault();
+                    if (vm.win) {
+                        //if window exist set new location for it
+                        if (vm.win.window == null) {
+                            vm.win = window.open(event.target.href, 'ref');
+                            vm.win.focus();
+                        }
+                            //open new window if user close prev window
+                        else {
+                            vm.win.location = event.target.href;
+                            vm.win.focus();
+                        }
+                    }
+                        //if user click on link first time open new window
+                    else {
+                        vm.win = window.open(event.target.href, 'ref');
+                        vm.win.focus();
+                    }
+                });
+            }
+        }
+
+        vm.dataSource = $$$$$;
+    }
+</script>
+</html>
